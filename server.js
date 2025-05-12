@@ -25,7 +25,15 @@ const io = socketIo(server, {
 
 // Middleware
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: function(origin, callback) {
+    const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000', 'http://192.168.224.143:3000'];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 app.use(express.json());

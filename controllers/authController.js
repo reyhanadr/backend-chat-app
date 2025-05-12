@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs').promises;
 const path = require('path');
@@ -152,22 +151,18 @@ exports.updateProfile = async (req, res) => {
         const oldAvatarPath = path.join(__dirname, '..', user.avatar);
         try {
           await fs.unlink(oldAvatarPath);
-        } catch (error) {
-          console.error('Error deleting old avatar:', error);
+        } catch (unlinkError) {
+          console.error('Error deleting old avatar:', unlinkError);
         }
       }
       updateData.avatar = 'uploads/' + req.file.filename;
       console.log('New avatar path:', updateData.avatar);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updateData },
-      { new: true }
-    ).select('-password');
-
-    console.log('Updated user:', updatedUser);
-
+    const updatedUser = await User.findByIdAndUpdate(userId, { $set: updateData }, { new: true }).select('-password');
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
     res.json({
       message: 'Profil berhasil diperbarui',
       user: updatedUser
@@ -213,6 +208,38 @@ exports.updatePassword = async (req, res) => {
     await user.save();
 
     res.json({ message: 'Password berhasil diperbarui' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Fungsi logout
+exports.logout = async (req, res) => {
+  try {
+    // Di sini, kita anggap logout hanya mengembalikan pesan sukses karena JWT biasanya dihandle client-side
+    // Jika diperlukan, Anda bisa menambahkan logika untuk blacklist token
+    res.json({ message: 'Logout berhasil' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Fungsi checkLogin untuk memeriksa status login
+exports.checkLogin = async (req, res) => {
+  try {
+    // Gunakan req.user dari middleware untuk memverifikasi
+    if (req.user && req.user.userId) {
+      const user = await User.findById(req.user.userId).select('-password');
+      if (user) {
+        res.json({ loggedIn: true, user: { id: user._id, username: user.username, email: user.email } });
+      } else {
+        res.json({ loggedIn: false, message: 'User tidak ditemukan' });
+      }
+    } else {
+      res.json({ loggedIn: false, message: 'Tidak ada sesi aktif' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

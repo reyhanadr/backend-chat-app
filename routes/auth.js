@@ -53,5 +53,7 @@ router.post('/login', authController.login);
 router.get('/me', auth, authController.getCurrentUser);
 router.put('/profile', auth, uploadMiddleware, authController.updateProfile);
 router.put('/password', auth, authController.updatePassword);
+router.post('/logout', authController.logout);
+router.get('/checkLogin', auth, authController.checkLogin);
 
 module.exports = router;

@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 const uploadRoutes = require('./routes/upload');
+const User = require('./models/User');
 
 dotenv.config();
 
@@ -17,7 +18,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: { 
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "https://demo-chat-app.reyhanadr.com"], 
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -26,7 +27,7 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors({
   origin: function(origin, callback) {
-    const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000', 'http://192.168.224.143:3000'];
+    const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000', 'http://144.91.76.56:3000', 'http://144.91.76.56:5000', 'https://demo-chat-app.reyhanadr.com', 'https://frontend-chat-app.vercel.app'];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -94,6 +95,11 @@ app.use((req, res) => {
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.userId);
+
+  // Tambahkan kode berikut untuk update isOnline ke true
+  User.findByIdAndUpdate(socket.userId, { isOnline: true }, { new: true })
+    .then(updatedUser => console.log('User set to online:', updatedUser))
+    .catch(err => console.error('Error setting user online:', err));
 
   // Join user's personal room
   socket.join(socket.userId);
@@ -181,6 +187,11 @@ io.on('connection', (socket) => {
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.userId);
+
+    // Tambahkan kode berikut untuk update isOnline ke false
+    User.findByIdAndUpdate(socket.userId, { isOnline: false }, { new: true })
+      .then(updatedUser => console.log('User set to offline:', updatedUser))
+      .catch(err => console.error('Error setting user offline:', err));
   });
 });
 
